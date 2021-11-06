@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <netinet/in.h>
 #include <string.h>
+#include <pwd.h>
 #define PORT 8080
 
 int main(int argc, char const *argv[])
@@ -15,6 +16,7 @@ int main(int argc, char const *argv[])
     int addrlen = sizeof(address);
     char buffer[1024] = {0};
     char *hello = "Hello from server";
+    int status;
 
     // Creating socket file descriptor
     if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0)
@@ -55,10 +57,30 @@ int main(int argc, char const *argv[])
         exit(EXIT_FAILURE);
     }
 
-    valread = read(new_socket, buffer, 1024);
-    printf("Read %d bytes: %s\n", valread, buffer);
-    send(new_socket, hello, strlen(hello), 0);
-    printf("Hello message sent\n");
+    //in child process
+    pid_t childPid = fork();
+    if (childPid == 0) {
+        uid_t nobodyUid = getpwnam("nobody")->pw_uid;
+        printf("nobody uid id: %ld\n", (long) nobodyUid);
+        if (setuid(nobodyUid) == 0) {
+            printf("Change uid to nobody user successfully! Current uid is %ld\n", (long) getuid());
+            valread = read(new_socket, buffer, 1024);
+            printf("Read %d bytes: %s\n", valread, buffer);
+            send(new_socket, hello, strlen(hello), 0);
+            printf("Hello message sent\n");
+        } else {
+            perror("Change uid");
+            exit(EXIT_FAILURE);
+        }
+    } else if (childPid > 0) {
+        while (wait(&status) > 0) {
+            printf("Waiting child process to complete\n");
+        }
+        printf("Child process exited\n");
+    } else {
+        perror("fork");
+        exit(EXIT_FAILURE);
+    }
 
     return 0;
 }
