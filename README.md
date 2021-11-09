@@ -1,4 +1,4 @@
-# cmpe279
+# CMPE279
 
 Assignment Team:
 
