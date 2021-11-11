@@ -73,10 +73,11 @@ int main(int argc, char const *argv[])
             exit(EXIT_FAILURE);
         }
     } else if (childPid > 0) {
-        while (wait(&status) > 0) {
-            printf("Waiting child process to complete\n");
+        if (wait(&status) == -1) {
+            printf("Parrent on waiting error\n");
         }
         printf("Child process exited\n");
+        exit(0);
     } else {
         perror("fork");
         exit(EXIT_FAILURE);
