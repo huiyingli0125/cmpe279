@@ -63,15 +63,18 @@ int main(int argc, char const *argv[])
         pid_t childPid = fork();
         if (childPid == 0) {
             uid_t nobodyUid = getpwnam("nobody")->pw_uid;
-            printf("nobody uid id: %ld\n", (long) nobodyUid);
-            setuid(nobodyUid);
-            
-            char args_sock[100];
-            sprintf(args_sock, "%d", new_socket);
-            char args_original[100];
-            sprintf(args_original, "%s", argv[0]);
-            char *args[] = {args_original, args_sock, NULL};
-            execvp(args[0], args);  
+            printf("nobody uid id: %ld\n", (long) nobodyUid);            
+            if (setuid(nobodyUid) == 0) {
+                char args_sock[50];
+                sprintf(args_sock, "%d", new_socket);
+                char args_original[50];
+                sprintf(args_original, "%s", argv[0]);
+                char *args[] = {args_original, args_sock, NULL};
+                execvp(args[0], args);  
+            } else {
+                perror("Change uid");
+                exit(EXIT_FAILURE);
+            }
 
         } else if (childPid > 0) {
             if (wait(&status) == -1) {
